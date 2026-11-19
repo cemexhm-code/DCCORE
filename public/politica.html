@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e79">
+  <title>Leer y firmar política</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <h1><span data-empresa>Mi Empresa</span><small>Lectura y firma</small></h1>
+    <button onclick="location.href='/'">Mis políticas</button>
+  </header>
+
+  <main>
+    <div class="pasos">
+      <div data-paso="1" class="activo">1. Leer</div>
+      <div data-paso="2">2. Firmar</div>
+      <div data-paso="3">3. Video</div>
+      <div data-paso="4">4. Enviar</div>
+    </div>
+
+    <div class="tarjeta">
+      <h2 id="titulo">Cargando…</h2>
+      <p class="sub" id="meta"></p>
+      <p id="descripcion" class="oculto"></p>
+    </div>
+
+    <!-- PASO 1: LEER -->
+    <section id="paso-1">
+      <div id="lector"><p class="sub" style="padding:14px">Cargando documento…</p></div>
+      <div id="fin-documento" style="height:1px"></div>
+      <div class="aviso-lectura"><div class="dentro">
+        <p class="sub" id="aviso-leer" style="margin:0 0 8px">Desplázate hasta el final del documento para continuar.</p>
+        <button class="btn bloque" id="btn-leido" disabled>He terminado de leer</button>
+      </div></div>
+    </section>
+
+    <!-- PASO 2: FIRMAR -->
+    <section id="paso-2" class="oculto">
+      <div class="tarjeta">
+        <h3>Firma con tu dedo</h3>
+        <p class="sub">Firma dentro del recuadro. Puedes girar el teléfono para tener más espacio.</p>
+        <div class="lienzo-firma">
+          <canvas id="lienzo"></canvas>
+          <div class="linea"></div>
+          <div class="ph" id="ph-firma">Firma aquí</div>
+        </div>
+        <div class="fila-btn">
+          <button class="btn sec" id="btn-borrar">Borrar</button>
+          <button class="btn" id="btn-firma-ok" disabled>Continuar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASO 3: VIDEO -->
+    <section id="paso-3" class="oculto">
+      <div class="tarjeta">
+        <h3>Graba tu video de aceptación</h3>
+        <p class="sub">Mira a la cámara y lee en voz alta la siguiente frase:</p>
+        <div class="frase" id="frase"></div>
+
+        <div id="zona-camara" class="oculto">
+          <div class="camara">
+            <video id="vista-previa" class="espejo" playsinline muted autoplay></video>
+            <div class="guion" id="guion"></div>
+            <div class="rec oculto" id="rec">0:00</div>
+          </div>
+          <div class="fila-btn">
+            <button class="btn rojo" id="btn-grabar">● Grabar</button>
+            <button class="btn sec oculto" id="btn-detener">■ Detener</button>
+          </div>
+        </div>
+
+        <div id="zona-revision" class="oculto">
+          <div class="camara"><video id="reproduccion" playsinline controls></video></div>
+          <div class="fila-btn">
+            <button class="btn sec" id="btn-regrabar">Grabar de nuevo</button>
+            <button class="btn" id="btn-video-ok">Usar este video</button>
+          </div>
+        </div>
+
+        <div id="zona-inicio">
+          <button class="btn bloque" id="btn-abrir-camara">📷 Abrir cámara</button>
+          <p class="sub" style="margin-top:12px">¿No abre la cámara? Usa la aplicación de cámara de tu teléfono:</p>
+          <label class="btn sec bloque" style="margin:0">
+            Grabar con la cámara del teléfono
+            <input type="file" id="video-archivo" accept="video/*" capture="user" class="oculto">
+          </label>
+        </div>
+        <div class="error" id="err-video"></div>
+      </div>
+    </section>
+
+    <!-- PASO 4: ENVIAR -->
+    <section id="paso-4" class="oculto">
+      <div class="tarjeta">
+        <h3>Confirma y envía</h3>
+        <p class="sub">Revisa tu firma y confirma tu aceptación.</p>
+        <img id="firma-preview" alt="Tu firma" style="max-width:260px;width:100%;border-bottom:1px solid #333;display:block;margin:8px 0 14px">
+        <label class="check"><input type="checkbox" id="acepto">
+          <span id="texto-acepto"></span></label>
+        <div class="error" id="err-envio"></div>
+        <div class="progreso oculto" id="prog-envio"><div style="width:0%"></div></div>
+        <div class="fila-btn">
+          <button class="btn sec" id="btn-atras">Atrás</button>
+          <button class="btn verde" id="btn-enviar" disabled>Firmar y enviar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script type="module" src="/js/politica.js"></script>
+</body>
+</html>

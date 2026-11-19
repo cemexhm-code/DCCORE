@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e79">
+  <title>Políticas · Empresa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <h1><span data-empresa>Mi Empresa</span><small>Portal de políticas</small></h1>
+    <button id="salir" class="oculto">Salir</button>
+  </header>
+
+  <main>
+    <!-- Ingreso -->
+    <section id="vista-ingreso" class="oculto">
+      <div class="tarjeta">
+        <h2>Bienvenido</h2>
+        <p class="sub">Ingresa tus datos para consultar y firmar las políticas de la empresa.</p>
+        <form id="form-ingreso">
+          <label for="numero">Número de empleado</label>
+          <input id="numero" type="text" inputmode="text" autocomplete="off" required>
+          <label for="nombre">Nombre completo (como en tu identificación)</label>
+          <input id="nombre" type="text" autocomplete="name" required>
+          <label for="area">Área o departamento</label>
+          <input id="area" type="text" autocomplete="organization-title">
+          <div class="error" id="err-ingreso"></div>
+          <button class="btn bloque" type="submit">Entrar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Lista -->
+    <section id="vista-lista" class="oculto">
+      <div class="tarjeta">
+        <h2 id="saludo">Hola</h2>
+        <p class="sub" id="resumen">Cargando…</p>
+        <div class="progreso"><div id="barra" style="width:0%"></div></div>
+      </div>
+      <div id="lista"></div>
+    </section>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script>
+    const TK = 'emp_token';
+    let token = sesion.get(TK);
+
+    async function iniciar() {
+      nombreEmpresa();
+      if (!token) return mostrarIngreso();
+      try {
+        const yo = await api('/api/empleado/yo', { token });
+        $('#saludo').textContent = 'Hola, ' + yo.nombre.split(' ')[0];
+        $('#vista-lista').classList.remove('oculto');
+        $('#salir').classList.remove('oculto');
+        cargarLista();
+      } catch { sesion.del(TK); mostrarIngreso(); }
+    }
+
+    function mostrarIngreso() {
+      $('#vista-ingreso').classList.remove('oculto');
+      $('#vista-lista').classList.add('oculto');
+      $('#salir').classList.add('oculto');
+    }
+
+    $('#form-ingreso').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('#err-ingreso').textContent = '';
+      try {
+        const r = await api('/api/empleado/ingresar', { method: 'POST', body: {
+          numero: $('#numero').value, nombre: $('#nombre').value, area: $('#area').value } });
+        token = r.token; sesion.set(TK, token);
+        $('#vista-ingreso').classList.add('oculto');
+        iniciar();
+      } catch (err) { $('#err-ingreso').textContent = err.message; }
+    });
+
+    $('#salir').addEventListener('click', () => { sesion.del(TK); token = null; mostrarIngreso(); });
+
+    async function cargarLista() {
+      const pols = await api('/api/politicas', { token });
+      const firmadas = pols.filter((p) => p.firma_id).length;
+      $('#resumen').textContent = pols.length
+        ? `Has firmado ${firmadas} de ${pols.length} políticas.` + (firmadas < pols.length ? ' Revisa las pendientes.' : ' ¡Todo al día!')
+        : 'Aún no hay políticas publicadas.';
+      $('#barra').style.width = pols.length ? (firmadas / pols.length * 100) + '%' : '0%';
+      $('#lista').innerHTML = pols.map((p) => {
+        const ok = !!p.firma_id;
+        const href = ok ? `/constancia.html?folio=${encodeURIComponent(p.folio)}` : `/politica.html?id=${p.id}`;
+        return `<a class="tarjeta politica" href="${href}">
+          <div class="ico ${ok ? 'ok' : 'pend'}">${ok ? '✅' : '📄'}</div>
+          <div class="info">
+            <b>${esc(p.titulo)}</b>
+            <span class="sub">${p.codigo ? esc(p.codigo) + ' · ' : ''}Versión ${esc(p.version)}${p.area ? ' · ' + esc(p.area) : ''}</span><br>
+            ${ok ? `<span class="etq ok">Firmada ${fecha(p.firmada, false)}</span>` : '<span class="etq pend">Pendiente de firma</span>'}
+          </div>
+          <div aria-hidden="true">›</div>
+        </a>`;
+      }).join('');
+    }
+
+    iniciar();
+  </script>
+</body>
+</html>

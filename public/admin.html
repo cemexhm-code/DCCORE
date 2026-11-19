@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administración · Políticas</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <h1><span data-empresa>Mi Empresa</span><small>Administración de políticas</small></h1>
+    <button id="salir" class="oculto">Salir</button>
+  </header>
+
+  <main class="ancho">
+    <!-- Ingreso -->
+    <section id="vista-ingreso" class="oculto" style="max-width:420px;margin:30px auto">
+      <div class="tarjeta">
+        <h2>Panel de administración</h2>
+        <form id="form-ingreso">
+          <label for="pass">Contraseña</label>
+          <input id="pass" type="password" required autocomplete="current-password">
+          <div class="error" id="err-ingreso"></div>
+          <button class="btn bloque">Entrar</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="vista-panel" class="oculto">
+      <div class="kpis">
+        <div class="kpi"><b id="k-pol">–</b><span>Políticas activas</span></div>
+        <div class="kpi"><b id="k-emp">–</b><span>Empleados registrados</span></div>
+        <div class="kpi"><b id="k-firmas">–</b><span>Firmas recibidas</span></div>
+        <div class="kpi"><b id="k-pend">–</b><span>Firmas pendientes</span></div>
+      </div>
+
+      <div class="pestanas">
+        <button data-tab="politicas" class="activa">Políticas</button>
+        <button data-tab="nueva">+ Subir política</button>
+        <button data-tab="firmas">Firmas</button>
+        <button data-tab="pendientes">Pendientes</button>
+        <button data-tab="compartir">Enlace / QR para empleados</button>
+      </div>
+
+      <!-- Políticas -->
+      <div class="tab tarjeta" id="tab-politicas">
+        <h3>Políticas publicadas</h3>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>Política</th><th>Versión</th><th>Firmas</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="tb-politicas"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Nueva -->
+      <div class="tab tarjeta oculto" id="tab-nueva">
+        <h3>Subir nueva política</h3>
+        <p class="sub">Sube el PDF de la política, o pega el texto si no tienes PDF. Si es una actualización de una política existente, elige cuál reemplaza: los empleados tendrán que firmar la nueva versión.</p>
+        <form id="form-politica">
+          <div class="grid2">
+            <div><label>Título *</label><input type="text" name="titulo" required placeholder="Ej. Política de uso de equipo de cómputo"></div>
+            <div><label>Código</label><input type="text" name="codigo" placeholder="Ej. RH-POL-004"></div>
+            <div><label>Versión</label><input type="text" name="version" value="1.0"></div>
+            <div><label>Área responsable</label><input type="text" name="area" placeholder="Ej. Recursos Humanos"></div>
+          </div>
+          <label>Descripción breve</label>
+          <input type="text" name="descripcion" placeholder="De qué trata la política (opcional)">
+          <label>Reemplaza a</label>
+          <select name="reemplaza" id="sel-reemplaza"><option value="">— Es una política nueva —</option></select>
+          <label>Archivo PDF</label>
+          <input type="file" name="archivo" accept="application/pdf">
+          <label>…o texto de la política</label>
+          <textarea name="contenido" placeholder="Pega aquí el texto completo si no subes PDF"></textarea>
+          <div class="error" id="err-politica"></div>
+          <button class="btn">Publicar política</button>
+        </form>
+      </div>
+
+      <!-- Firmas -->
+      <div class="tab tarjeta oculto" id="tab-firmas">
+        <h3>Firmas recibidas</h3>
+        <div class="filtros">
+          <input type="search" id="buscar" placeholder="Buscar por nombre, número o folio">
+          <select id="filtro-politica"><option value="">Todas las políticas</option></select>
+          <button class="btn sec" id="btn-csv" style="flex:0 0 auto">Descargar Excel (CSV)</button>
+        </div>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>Fecha</th><th>Empleado</th><th>Política</th><th>Lectura</th><th></th></tr></thead>
+          <tbody id="tb-firmas"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Pendientes -->
+      <div class="tab tarjeta oculto" id="tab-pendientes">
+        <h3>Firmas pendientes</h3>
+        <p class="sub">Empleados registrados en el portal que aún no firman alguna política activa.</p>
+        <div class="tabla-scroll"><table>
+          <thead><tr><th>No.</th><th>Empleado</th><th>Área</th><th>Política pendiente</th></tr></thead>
+          <tbody id="tb-pendientes"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Compartir -->
+      <div class="tab tarjeta oculto" id="tab-compartir">
+        <h3>Comparte este enlace con tus empleados</h3>
+        <p class="sub">Envíalo por WhatsApp o correo, o imprime el código QR y colócalo en un lugar visible.</p>
+        <div class="frase" id="enlace"></div>
+        <div class="fila-btn" style="max-width:420px">
+          <button class="btn sec" id="btn-copiar">Copiar enlace</button>
+          <a class="btn sec" id="btn-wa" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+        </div>
+        <div id="qr" style="max-width:260px;margin-top:16px"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="detalle"><div class="cuerpo" id="detalle-cuerpo"></div></dialog>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

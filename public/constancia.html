@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e79">
+  <title>Constancia de firma</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <h1><span data-empresa>Mi Empresa</span><small>Constancia de firma</small></h1>
+    <button onclick="location.href='/'">Mis políticas</button>
+  </header>
+  <main>
+    <div class="tarjeta sello oculto no-imprimir" id="exito">
+      <div class="grande">✅</div>
+      <h2>¡Listo! Tu firma quedó registrada</h2>
+      <p class="sub">Gracias. Puedes guardar o imprimir esta constancia.</p>
+    </div>
+
+    <div class="tarjeta constancia" id="doc">
+      <p class="sub">Cargando…</p>
+    </div>
+
+    <div class="fila-btn no-imprimir">
+      <button class="btn sec" onclick="window.print()">Imprimir / guardar PDF</button>
+      <a class="btn" href="/">Ver otras políticas</a>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script>
+    (async () => {
+      nombreEmpresa();
+      const token = sesion.get('emp_token');
+      if (!token) return location.replace('/');
+      const qs = new URLSearchParams(location.search);
+      const folio = qs.get('folio');
+      if (qs.get('nuevo')) $('#exito').classList.remove('oculto');
+      try {
+        const c = await api('/api/constancia/' + encodeURIComponent(folio), { token });
+        const r = await fetch(`/api/constancia/${encodeURIComponent(folio)}/firma`, { headers: { Authorization: 'Bearer ' + token } });
+        const firmaUrl = URL.createObjectURL(await r.blob());
+        $('#doc').innerHTML = `
+          <h2>Constancia de lectura y aceptación</h2>
+          <p class="sub"><span data-empresa></span></p>
+          <p class="frase">${esc(c.frase)}</p>
+          <img class="firma" src="${firmaUrl}" alt="Firma">
+          <p style="margin:0 0 16px"><b>${esc(c.nombre_firmante)}</b></p>
+          <dl>
+            <dt>Folio</dt><dd>${esc(c.folio)}</dd>
+            <dt>Fecha y hora</dt><dd>${fecha(c.creada)}</dd>
+            <dt>No. empleado</dt><dd>${esc(c.numero)}</dd>
+            ${c.area ? `<dt>Área</dt><dd>${esc(c.area)}</dd>` : ''}
+            <dt>Política</dt><dd>${esc(c.titulo)}${c.codigo ? ' (' + esc(c.codigo) + ')' : ''}</dd>
+            <dt>Versión</dt><dd>${esc(c.version)}</dd>
+            <dt>Evidencia</dt><dd>Firma autógrafa digital y video de aceptación</dd>
+            <dt>Huella del documento</dt><dd><small>${esc(c.hash_politica)}</small></dd>
+            <dt>Huella del video</dt><dd><small>${esc(c.hash_video)}</small></dd>
+          </dl>`;
+        nombreEmpresa();
+      } catch (e) {
+        $('#doc').innerHTML = `<p class="error">${esc(e.message)}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

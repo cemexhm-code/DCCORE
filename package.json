@@ -1,0 +1,23 @@
+{
+  "name": "dccore",
+  "version": "1.0.0",
+  "description": "Portal para que los empleados lean, firmen y graben video de aceptación de las políticas de la empresa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "better-sqlite3": "^13.2.0",
+    "dotenv": "^18.0.10",
+    "express": "^4.22.3",
+    "multer": "^2.5.0",
+    "pdfjs-dist": "^4.10.38",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}
