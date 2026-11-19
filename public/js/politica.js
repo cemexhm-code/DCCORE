@@ -1,4 +1,5 @@
 import * as pdfjsLib from '/vendor/pdfjs/pdf.min.mjs';
+import { subirArchivo } from '/js/subir.js';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs';
 
 const token = sesion.get('emp_token');
@@ -240,38 +241,32 @@ function apagarCamara() {
 $('#acepto').addEventListener('change', (e) => ($('#btn-enviar').disabled = !e.target.checked));
 $('#btn-atras').addEventListener('click', () => irPaso(3));
 
-$('#btn-enviar').addEventListener('click', () => {
+$('#btn-enviar').addEventListener('click', async () => {
   if (!firmaBlob || !videoBlob) { $('#err-envio').textContent = 'Falta la firma o el video.'; return; }
-  const fd = new FormData();
-  fd.append('acepto', 'si');
-  fd.append('segundos_lectura', String(segundosLectura));
-  fd.append('firma', firmaBlob, 'firma.png');
-  const ext = (videoBlob.type || '').includes('mp4') ? 'mp4' : (videoBlob.type || '').includes('quicktime') ? 'mov' : 'webm';
-  fd.append('video', videoBlob, 'video.' + ext);
-
   const btn = $('#btn-enviar');
   btn.disabled = true; btn.textContent = 'Enviando…';
   $('#err-envio').textContent = '';
   const prog = $('#prog-envio'); prog.classList.remove('oculto');
+  const barra = (pct) => (prog.firstElementChild.style.width = pct + '%');
 
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', `/api/politicas/${id}/firmar`);
-  xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-  xhr.upload.onprogress = (e) => { if (e.lengthComputable) prog.firstElementChild.style.width = (e.loaded / e.total * 100) + '%'; };
-  xhr.onload = () => {
-    let r = {}; try { r = JSON.parse(xhr.responseText); } catch {}
-    if (xhr.status === 200 || (xhr.status === 409 && r.folio)) {
-      location.replace('/constancia.html?nuevo=1&folio=' + encodeURIComponent(r.folio));
-    } else {
-      $('#err-envio').textContent = r.error || 'No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
-      btn.disabled = false; btn.textContent = 'Firmar y enviar';
-    }
-  };
-  xhr.onerror = () => {
-    $('#err-envio').textContent = 'Sin conexión. Intenta de nuevo.';
+  const tipo = (videoBlob.type || '').toLowerCase();
+  const ext = tipo.includes('mp4') ? 'mp4' : tipo.includes('quicktime') ? 'mov' : tipo.includes('webm') ? 'webm' : 'mp4';
+  const base = `${politica.id}_${empleado.id}_${Date.now()}`;
+  const payload = { token, politicaId: politica.id };
+  try {
+    const firma = await subirArchivo(`firmas/${base}.png`, firmaBlob, { ...payload, tipo: 'firma' });
+    barra(5);
+    const video = await subirArchivo(`videos/${base}.${ext}`, videoBlob, { ...payload, tipo: 'video' }, (p) => barra(5 + p * 0.9));
+    barra(97);
+    const r = await api(`/api/politicas/${id}/firmar`, { method: 'POST', token, body: {
+      acepto: 'si', segundos_lectura: segundosLectura, firma, video } });
+    location.replace('/constancia.html?nuevo=1&folio=' + encodeURIComponent(r.folio));
+  } catch (e) {
+    if (e.status === 409 && e.data?.folio) return location.replace('/constancia.html?folio=' + encodeURIComponent(e.data.folio));
+    $('#err-envio').textContent = e.message || 'No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
     btn.disabled = false; btn.textContent = 'Firmar y enviar';
-  };
-  xhr.send(fd);
+    prog.classList.add('oculto'); barra(0);
+  }
 });
 
 cargar();

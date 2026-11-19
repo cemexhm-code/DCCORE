@@ -1,3 +1,5 @@
+import { subirArchivo } from '/js/subir.js';
+
 const TK = 'admin_token';
 let token = sesion.get(TK);
 let politicas = [];
@@ -76,23 +78,28 @@ $('#tb-politicas').addEventListener('click', async (e) => {
   if (ver) abrirArchivo(`/api/admin/politicas/${ver.dataset.ver}/archivo`);
 });
 
-async function abrirArchivo(url) {
-  const ventana = window.open('', '_blank');
-  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-  const u = URL.createObjectURL(await r.blob());
-  if (ventana) ventana.location = u; else location.href = u;
+function abrirArchivo(url) {
+  window.open(url + '?t=' + encodeURIComponent(token), '_blank', 'noopener');
 }
 
 $('#form-politica').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('#err-politica').textContent = '';
   const fd = new FormData(e.target);
-  if (!fd.get('archivo')?.size) fd.delete('archivo');
+  const pdf = fd.get('archivo');
   if (fd.get('reemplaza') && !confirm('La política anterior se desactivará y los empleados deberán firmar esta nueva versión. ¿Continuar?')) return;
   const btn = e.target.querySelector('button');
   btn.disabled = true; btn.textContent = 'Publicando…';
   try {
-    await api('/api/admin/politicas', { method: 'POST', token, form: fd });
+    const datos = Object.fromEntries([...fd.entries()].filter(([k]) => k !== 'archivo'));
+    if (pdf?.size) {
+      if (pdf.type && pdf.type !== 'application/pdf') throw new Error('El archivo debe ser PDF.');
+      const nombre = `politicas/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
+      const pdfTipado = pdf.type ? pdf : new Blob([pdf], { type: 'application/pdf' });
+      datos.archivo = await subirArchivo(nombre, pdfTipado, { token, tipo: 'politica' },
+        (p) => (btn.textContent = `Subiendo PDF… ${Math.round(p)}%`));
+    }
+    await api('/api/admin/politicas', { method: 'POST', token, body: datos });
     e.target.reset();
     await cargarResumen(); cargarPendientes();
     $('[data-tab="politicas"]').click();

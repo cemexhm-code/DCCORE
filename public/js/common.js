@@ -23,7 +23,7 @@ async function api(url, { method = 'GET', body, token, form } = {}) {
 // Las fechas se guardan en UTC; se muestran en la hora local del dispositivo
 function fecha(s, conHora = true) {
   if (!s) return '';
-  const d = new Date(s.replace(' ', 'T') + 'Z');
+  const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s.replace(' ', 'T') + 'Z');
   return d.toLocaleString('es-MX', conHora
     ? { dateStyle: 'medium', timeStyle: 'short' }
     : { dateStyle: 'medium' });

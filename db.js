@@ -1,35 +1,33 @@
-// Base de datos SQLite (un solo archivo en data/portal.db)
-const path = require('path');
-const fs = require('fs');
-const Database = require('better-sqlite3');
+// Base de datos Postgres (en Vercel: Neon desde Storage → Marketplace; crea DATABASE_URL)
+const { Pool } = require('pg');
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-fs.mkdirSync(path.join(DATA_DIR, 'politicas'), { recursive: true });
-fs.mkdirSync(path.join(DATA_DIR, 'firmas'), { recursive: true });
-fs.mkdirSync(path.join(DATA_DIR, 'videos'), { recursive: true });
+const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+if (!url) console.warn('⚠️  Falta DATABASE_URL (conexión a Postgres).');
 
-const db = new Database(path.join(DATA_DIR, 'portal.db'));
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const local = /localhost|127\.0\.0\.1/.test(url || '');
+const pool = new Pool({
+  connectionString: url,
+  ssl: local ? false : { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 10000,
+});
 
-db.exec(`
+const ESQUEMA = `
 CREATE TABLE IF NOT EXISTS empleados (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  numero    TEXT NOT NULL UNIQUE,
-  nombre    TEXT NOT NULL,
-  area      TEXT,
-  creado    TEXT NOT NULL DEFAULT (datetime('now'))
+  id      SERIAL PRIMARY KEY,
+  numero  TEXT NOT NULL UNIQUE,
+  nombre  TEXT NOT NULL,
+  area    TEXT,
+  creado  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 CREATE TABLE IF NOT EXISTS sesiones (
   token        TEXT PRIMARY KEY,
   tipo         TEXT NOT NULL CHECK (tipo IN ('empleado','admin')),
   empleado_id  INTEGER REFERENCES empleados(id) ON DELETE CASCADE,
-  creado       TEXT NOT NULL DEFAULT (datetime('now'))
+  creado       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 CREATE TABLE IF NOT EXISTS politicas (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  id           SERIAL PRIMARY KEY,
   codigo       TEXT,
   titulo       TEXT NOT NULL,
   version      TEXT NOT NULL DEFAULT '1.0',
@@ -39,12 +37,11 @@ CREATE TABLE IF NOT EXISTS politicas (
   archivo      TEXT,
   contenido    TEXT,
   hash         TEXT NOT NULL,
-  activa       INTEGER NOT NULL DEFAULT 1,
-  creada       TEXT NOT NULL DEFAULT (datetime('now'))
+  activa       BOOLEAN NOT NULL DEFAULT true,
+  creada       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
 CREATE TABLE IF NOT EXISTS firmas (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  id                SERIAL PRIMARY KEY,
   folio             TEXT NOT NULL UNIQUE,
   politica_id       INTEGER NOT NULL REFERENCES politicas(id),
   empleado_id       INTEGER NOT NULL REFERENCES empleados(id),
@@ -59,9 +56,20 @@ CREATE TABLE IF NOT EXISTS firmas (
   segundos_lectura  INTEGER,
   ip                TEXT,
   user_agent        TEXT,
-  creada            TEXT NOT NULL DEFAULT (datetime('now')),
+  creada            TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (politica_id, empleado_id)
-);
-`);
+);`;
 
-module.exports = { db, DATA_DIR };
+let listo;
+function preparar() {
+  if (!listo) listo = pool.query(ESQUEMA).catch((e) => { listo = null; throw e; });
+  return listo;
+}
+
+async function q(sql, params = []) {
+  await preparar();
+  return (await pool.query(sql, params)).rows;
+}
+const uno = async (sql, params) => (await q(sql, params))[0];
+
+module.exports = { q, uno, pool };
